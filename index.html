@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#070B14" />
+  <title>Watch Rewards — Admin Panel</title>
+  <meta name="description" content="Mobile-first Web Admin Panel for Watch Rewards with live Google Sheets telemetry, earnings calculator, coin transmitter, ban controls, and fraud radar." />
+  <meta property="og:title" content="Watch Rewards — Admin Panel" />
+  <meta property="og:description" content="Mobile-first Web Admin Panel for Watch Rewards with live Google Sheets telemetry, earnings calculator, coin transmitter, ban controls, and fraud radar." />
+  <meta property="og:type" content="website" />
+
+  <!-- Distinctive Typography: Outfit (Display), Plus Jakarta Sans (Body), JetBrains Mono (Tabular Numerals & IDs) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS Play CDN for Single-File Portability (GitHub Pages / Netlify / Vercel) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['"Outfit"', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            canvas: '#070B14',
+            surface: '#0E1525',
+            surfaceElevated: '#131D33',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+    }
+
+    body {
+      background-color: #070B14;
+      color: #F8FAFC;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      letter-spacing: 0.01em;
+      -webkit-tap-highlight-color: transparent;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(99, 102, 241, 0.14), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 90% 10%, rgba(16, 185, 129, 0.07), transparent 65%);
+      background-attachment: fixed;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .glass-card {
+      background: rgba(14, 21, 37, 0.72);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+    }
+
+    .glass-card-indigo {
+      background: linear-gradient(180deg, rgba(24, 33, 62, 0.78) 0%, rgba(14, 21, 37, 0.78) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(129, 140, 248, 0.24);
+      box-shadow: 0 0 28px rgba(99, 102, 241, 0.09);
+    }
+
+    .glass-card-emerald {
+      background: linear-gradient(180deg, rgba(16, 38, 37, 0.76) 0%, rgba(14, 21, 37, 0.78) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(52, 211, 153, 0.22);
+      box-shadow: 0 0 28px rgba(16, 185, 129, 0.08);
+    }
+
+    .glass-card-amber {
+      background: linear-gradient(180deg, rgba(39, 31, 20, 0.74) 0%, rgba(14, 21, 37, 0.78) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 191, 36, 0.22);
+      box-shadow: 0 0 28px rgba(245, 158, 11, 0.08);
+    }
+
+    .glass-card-sky {
+      background: linear-gradient(180deg, rgba(15, 34, 52, 0.76) 0%, rgba(14, 21, 37, 0.78) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.22);
+      box-shadow: 0 0 28px rgba(14, 165, 233, 0.08);
+    }
+
+    .fraud-card {
+      background: linear-gradient(180deg, rgba(69, 10, 10, 0.62) 0%, rgba(28, 12, 18, 0.85) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.75);
+      box-shadow: 0 0 26px rgba(239, 68, 68, 0.22);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+<script src="/_aistudio-iframe.js?v=1f94f900"></script></head>
+<body class="min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- ===================================================================== -->
+  <!-- 1. ADMIN PASSWORD LOGIN GATE                                          -->
+  <!-- ===================================================================== -->
+  <main id="login-gate" class="min-h-screen flex items-center justify-center p-4">
+    <section class="w-full max-w-md glass-card rounded-2xl p-6 sm:p-8 shadow-2xl">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="font-display text-xl font-semibold text-white tracking-tight">Watch Rewards Admin</h1>
+          <p class="text-xs text-slate-400">Restricted telemetry and player management</p>
+        </div>
+      </div>
+
+      <form id="login-form" class="space-y-4" novalidate>
+        <div>
+          <label for="admin-pin-input" class="block text-sm font-medium text-slate-300 mb-2">
+            Admin Secret PIN
+          </label>
+          <div class="relative">
+            <input
+              id="admin-pin-input"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter secret PIN"
+              required
+              class="w-full min-h-[48px] bg-[#090E1A] border border-white/15 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 rounded-xl px-4 pr-12 text-base text-white placeholder-slate-500 font-mono transition"
+            />
+            <button
+              type="button"
+              id="toggle-pin-visibility"
+              aria-label="Toggle PIN visibility"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+            >
+              <svg id="eye-icon-open" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <svg id="eye-icon-closed" class="w-5 h-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <p id="login-error" class="hidden text-xs font-medium text-red-400 bg-red-950/50 border border-red-500/30 rounded-lg px-3 py-2" role="alert">
+          Incorrect Admin PIN. Access denied.
+        </p>
+
+        <button
+          type="submit"
+          class="w-full min-h-[48px] bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-semibold text-sm rounded-xl transition shadow-lg shadow-indigo-950/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+        >
+          Unlock Dashboard
+        </button>
+      </form>
+
+      <p class="mt-5 text-xs text-slate-500 text-center">
+        Session is stored locally on this device until you lock the panel.
+      </p>
+    </section>
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- 2. DASHBOARD SHELL (UNLOCKED)                                         -->
+  <!-- ===================================================================== -->
+  <div id="dashboard-shell" class="hidden min-h-screen flex flex-col">
+
+    <!-- Compact Mobile-First Sticky Header (Strict 3-Zone Single-Row Contract) -->
+    <header class="sticky top-0 z-30 bg-[#070B14]/88 backdrop-blur-md border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4 sm:gap-8">
+        <!-- Zone 1: Brand Wordmark -->
+        <a href="#top" class="font-display text-base sm:text-lg font-semibold text-white whitespace-nowrap shrink-0 tracking-tight">
+          Watch Rewards
+        </a>
+
+        <!-- Zone 2: Clean Desktop Navigation Links -->
+        <nav class="hidden md:flex items-center gap-6 text-sm font-medium text-slate-400" aria-label="Dashboard sections">
+          <a href="#telemetry" class="hover:text-white transition-colors whitespace-nowrap shrink-0">Telemetry</a>
+          <a href="#controls" class="hover:text-white transition-colors whitespace-nowrap shrink-0">Controls</a>
+          <a href="#players" class="hover:text-white transition-colors whitespace-nowrap shrink-0">Players</a>
+        </nav>
+
+        <!-- Zone 3: Refresh Data + Lock -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            id="refresh-btn"
+            type="button"
+            class="min-h-[40px] px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 transition whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+          >
+            <svg id="refresh-icon" class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Refresh Data</span>
+          </button>
+
+          <button
+            id="logout-btn"
+            type="button"
+            title="Lock Dashboard"
+            aria-label="Lock Dashboard"
+            class="min-h-[40px] min-w-[40px] px-2.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-xs font-medium flex items-center justify-center transition whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Toast Feedback -->
+    <div
+      id="toast-banner"
+      role="status"
+      aria-live="polite"
+      class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] sm:max-w-md px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md transition-opacity"
+    ></div>
+
+    <!-- Main Container -->
+    <div id="top" class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-6 sm:space-y-8">
+
+      <!-- Sheet API Configuration Notice (Only shown when SHEET_API_URL is blank) -->
+      <section id="setup-notice" class="hidden glass-card rounded-2xl p-4 sm:p-5 border border-amber-400/30">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <h2 class="font-display text-base font-semibold text-amber-300">
+              Google Sheets Web App URL Required
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+              Paste your Google Apps Script Web App URL into <code class="font-mono text-amber-200 bg-white/5 px-1.5 py-0.5 rounded">SHEET_API_URL</code> at the top of <code class="font-mono text-slate-200">index.html</code>, or connect it directly in this browser below.
+            </p>
+          </div>
+          <form id="runtime-url-form" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto lg:min-w-[440px]">
+            <input
+              id="runtime-url-input"
+              type="url"
+              placeholder="https://script.google.com/macros/s/.../exec"
+              class="flex-1 min-h-[44px] bg-[#090E1A] border border-white/15 focus:border-amber-400 focus:outline-none rounded-xl px-3.5 text-xs sm:text-sm font-mono text-white placeholder-slate-500"
+            />
+            <button
+              type="submit"
+              class="min-h-[44px] px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs sm:text-sm whitespace-nowrap shrink-0 transition"
+            >
+              Connect URL
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Fetch Status / Error Alert (Only visible on sync failure) -->
+      <section id="sync-error-banner" class="hidden glass-card rounded-2xl p-4 border border-red-500/40 bg-red-950/30">
+        <div class="flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <h2 class="text-sm font-semibold text-red-300">Unable to load live data from Google Sheets</h2>
+            <p id="sync-error-detail" class="text-xs text-red-200/80 font-mono break-all"></p>
+          </div>
+          <button id="dismiss-error-btn" type="button" class="min-h-[36px] px-2.5 text-xs text-red-300 hover:text-white">
+            Dismiss
+          </button>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- 2. LIVE TELEMETRY & EARNINGS DASHBOARD (4 TOP GLASSMORPHISM CARDS)  -->
+      <!-- =================================================================== -->
+      <section id="telemetry" aria-labelledby="telemetry-heading" class="space-y-3">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="telemetry-heading" class="font-display text-lg sm:text-xl font-semibold text-white">
+            Live Telemetry &amp; Earnings
+          </h2>
+          <p id="last-synced-text" class="text-xs text-slate-400 font-mono tabular-nums">
+            Waiting for sync
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Card 1: Total Registered Users -->
+          <article class="glass-card-indigo rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs sm:text-sm font-medium text-slate-300">Total Registered Users</span>
+              <svg class="w-4 h-4 text-indigo-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <p id="metric-total-users" class="font-mono text-2xl sm:text-3xl font-bold text-white tabular-nums">0</p>
+              <p class="text-xs text-slate-400 mt-1">Unique 10-digit IDs</p>
+            </div>
+          </article>
+
+          <!-- Card 2: Active Users (24h) -->
+          <article class="glass-card-emerald rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs sm:text-sm font-medium text-slate-300">Active Users (24h)</span>
+              <svg class="w-4 h-4 text-emerald-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p id="metric-active-users" class="font-mono text-2xl sm:text-3xl font-bold text-emerald-300 tabular-nums">0</p>
+              <p class="text-xs text-slate-400 mt-1">Active today</p>
+            </div>
+          </article>
+
+          <!-- Card 3: Total Ads Watched -->
+          <article class="glass-card-sky rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs sm:text-sm font-medium text-slate-300">Total Ads Watched</span>
+              <svg class="w-4 h-4 text-sky-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p id="metric-total-ads" class="font-mono text-2xl sm:text-3xl font-bold text-sky-200 tabular-nums">0</p>
+              <p class="text-xs text-slate-400 mt-1">Rewarded impressions</p>
+            </div>
+          </article>
+
+          <!-- Card 4: Estimated Revenue (USD & INR) -->
+          <article class="glass-card-amber rounded-2xl p-4 sm:p-5 flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs sm:text-sm font-medium text-slate-300">Estimated Revenue</span>
+              <svg class="w-4 h-4 text-amber-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p id="metric-revenue-usd" class="font-mono text-2xl sm:text-3xl font-bold text-amber-300 tabular-nums">$0.00</p>
+              <p id="metric-revenue-inr" class="font-mono text-xs sm:text-sm font-medium text-amber-100/90 mt-1 tabular-nums">₹0.00 INR</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- 3. MANUAL COIN TRANSMITTER & USER BAN CONTROLS                      -->
+      <!-- =================================================================== -->
+      <section id="controls" aria-labelledby="controls-heading" class="glass-card rounded-2xl p-4 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+          <div>
+            <h2 id="controls-heading" class="font-display text-lg font-semibold text-white">
+              Coin Transmitter &amp; User Controls
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-400">
+              Credit bonus coins or toggle block status for any 10-digit player ID.
+            </p>
+          </div>
+          <span class="text-xs font-mono text-slate-400">Tap any player card below to auto-fill ID</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 items-end">
+          <div class="md:col-span-4">
+            <label for="control-user-id" class="block text-xs font-medium text-slate-300 mb-1.5">
+              Enter 10-Digit User ID
+            </label>
+            <input
+              id="control-user-id"
+              type="text"
+              inputmode="numeric"
+              maxlength="10"
+              placeholder="e.g. 2974037391"
+              class="w-full min-h-[48px] bg-[#090E1A] border border-white/15 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 rounded-xl px-4 text-sm sm:text-base font-mono text-white placeholder-slate-500 tabular-nums transition"
+            />
+          </div>
+
+          <div class="md:col-span-3">
+            <label for="control-coin-amount" class="block text-xs font-medium text-slate-300 mb-1.5">
+              Enter Coin Amount
+            </label>
+            <input
+              id="control-coin-amount"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              step="1"
+              placeholder="e.g. 500"
+              class="w-full min-h-[48px] bg-[#090E1A] border border-white/15 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 rounded-xl px-4 text-sm sm:text-base font-mono text-white placeholder-slate-500 tabular-nums transition"
+            />
+          </div>
+
+          <div class="md:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 md:pt-0">
+            <button
+              id="btn-send-coins"
+              type="button"
+              class="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 active:scale-[0.98] text-white text-sm font-semibold transition shadow-lg shadow-emerald-950/30 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+            >
+              Send Bonus Coins
+            </button>
+
+            <button
+              id="btn-block-user"
+              type="button"
+              class="w-full min-h-[48px] px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-[0.98] text-white text-sm font-semibold transition shadow-lg shadow-red-950/30 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+            >
+              Block / Unblock User
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- 4. LIVE PLAYER LIST & FRAUD RADAR                                   -->
+      <!-- =================================================================== -->
+      <section id="players" aria-labelledby="players-heading" class="space-y-4 pb-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="flex items-baseline gap-3">
+            <h2 id="players-heading" class="font-display text-lg sm:text-xl font-semibold text-white">
+              Live Player List &amp; Fraud Radar
+            </h2>
+            <span id="player-count-summary" class="text-xs sm:text-sm font-mono text-slate-400 tabular-nums">
+              0 players
+            </span>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full lg:w-auto">
+            <!-- Real-time Search Bar -->
+            <div class="relative flex-1 sm:w-72">
+              <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                id="player-search-input"
+                type="search"
+                placeholder="Search by Name or 10-Digit ID"
+                class="w-full min-h-[44px] bg-[#0E1525] border border-white/12 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/25 rounded-xl pl-10 pr-4 text-sm text-white placeholder-slate-500 transition"
+              />
+            </div>
+
+            <!-- Interactive Filter Segmented Control -->
+            <div class="flex items-center gap-1 p-1 bg-[#0E1525] border border-white/10 rounded-xl overflow-x-auto" role="group" aria-label="Filter players">
+              <button type="button" data-filter="all" class="filter-tab min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-600 text-white whitespace-nowrap shrink-0 transition">
+                All
+              </button>
+              <button type="button" data-filter="active" class="filter-tab min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white whitespace-nowrap shrink-0 transition">
+                Active 24h
+              </button>
+              <button type="button" data-filter="fraud" class="filter-tab min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white whitespace-nowrap shrink-0 transition">
+                Fraud Alerts
+              </button>
+              <button type="button" data-filter="blocked" class="filter-tab min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white whitespace-nowrap shrink-0 transition">
+                Blocked
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Cards Container -->
+        <div id="player-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <!-- Dynamically populated by Vanilla JavaScript -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Clean Footer with Setup & Hosting Info -->
+    <footer class="border-t border-white/10 py-4 px-4 sm:px-6 text-xs text-slate-500">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <span>Watch Rewards Admin Panel &middot; Google Sheets Connected</span>
+        <button id="open-api-guide-btn" type="button" class="text-slate-400 hover:text-white underline underline-offset-4 transition">
+          Change Sheet URL / View Apps Script Format
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- API URL & APPS SCRIPT SETUP MODAL                                     -->
+  <!-- ===================================================================== -->
+  <div id="api-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
+    <div class="w-full sm:max-w-lg glass-card rounded-t-3xl sm:rounded-2xl p-6 space-y-4 border-t sm:border border-white/15">
+      <div class="flex items-center justify-between">
+        <h3 id="api-modal-title" class="font-display text-base font-semibold text-white">Google Sheets API Settings</h3>
+        <button id="close-api-modal-btn" type="button" class="min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <form id="modal-url-form" class="space-y-3">
+        <label for="modal-url-input" class="block text-xs font-medium text-slate-300">
+          Remote Google Sheets Web App URL
+        </label>
+        <input
+          id="modal-url-input"
+          type="url"
+          placeholder="https://script.google.com/macros/s/.../exec"
+          class="w-full min-h-[44px] bg-[#090E1A] border border-white/15 focus:border-indigo-400 focus:outline-none rounded-xl px-3.5 text-xs font-mono text-white placeholder-slate-500"
+        />
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" id="clear-saved-url-btn" class="min-h-[40px] px-3 py-2 text-xs text-slate-400 hover:text-white">
+            Reset to Default
+          </button>
+          <button type="submit" class="min-h-[40px] px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+            Save &amp; Sync
+          </button>
+        </div>
+      </form>
+
+      <div class="pt-2 border-t border-white/10 space-y-1.5 text-xs text-slate-400">
+        <p class="font-medium text-slate-300">Expected POST Payloads:</p>
+        <p class="font-mono text-[11px] bg-[#090E1A] p-2.5 rounded-lg border border-white/10 text-slate-300">
+          { "action": "creditBonus", "userId": "1234567890", "amount": 500 }<br/>
+          { "action": "blockUser", "userId": "1234567890" }
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- VANILLA JAVASCRIPT APPLICATION LOGIC                                  -->
+  <!-- ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // ===================================================================
+      // CONFIGURATION: Paste your deployed Google Sheets Web App URL here
+      // ===================================================================
+      const SHEET_API_URL = '';
+      const ADMIN_SECRET_PIN = 'admin7979';
+
+      const USD_PER_THOUSAND_ADS = 2.0;
+      const USD_TO_INR_RATE = 84.30;
+      const SESSION_STORAGE_KEY = 'wr_admin_unlocked_v1';
+      const URL_OVERRIDE_KEY = 'wr_sheet_api_url_v1';
+
+      // Runtime State (Zero hardcoded dummy users or stats)
+      const state = {
+        users: [],
+        isLoading: false,
+        searchQuery: '',
+        activeFilter: 'all',
+        lastSyncedAt: null,
+        toastTimer: null,
+      };
+
+      // DOM References
+      const els = {
+        loginGate: document.getElementById('login-gate'),
+        loginForm: document.getElementById('login-form'),
+        pinInput: document.getElementById('admin-pin-input'),
+        togglePinBtn: document.getElementById('toggle-pin-visibility'),
+        eyeOpen: document.getElementById('eye-icon-open'),
+        eyeClosed: document.getElementById('eye-icon-closed'),
+        loginError: document.getElementById('login-error'),
+
+        dashboardShell: document.getElementById('dashboard-shell'),
+        refreshBtn: document.getElementById('refresh-btn'),
+        refreshIcon: document.getElementById('refresh-icon'),
+        logoutBtn: document.getElementById('logout-btn'),
+        toastBanner: document.getElementById('toast-banner'),
+
+        setupNotice: document.getElementById('setup-notice'),
+        runtimeUrlForm: document.getElementById('runtime-url-form'),
+        runtimeUrlInput: document.getElementById('runtime-url-input'),
+
+        syncErrorBanner: document.getElementById('sync-error-banner'),
+        syncErrorDetail: document.getElementById('sync-error-detail'),
+        dismissErrorBtn: document.getElementById('dismiss-error-btn'),
+
+        metricTotalUsers: document.getElementById('metric-total-users'),
+        metricActiveUsers: document.getElementById('metric-active-users'),
+        metricTotalAds: document.getElementById('metric-total-ads'),
+        metricRevenueUsd: document.getElementById('metric-revenue-usd'),
+        metricRevenueInr: document.getElementById('metric-revenue-inr'),
+        lastSyncedText: document.getElementById('last-synced-text'),
+
+        controlUserId: document.getElementById('control-user-id'),
+        controlCoinAmount: document.getElementById('control-coin-amount'),
+        btnSendCoins: document.getElementById('btn-send-coins'),
+        btnBlockUser: document.getElementById('btn-block-user'),
+
+        playerSearchInput: document.getElementById('player-search-input'),
+        filterTabs: document.querySelectorAll('.filter-tab'),
+        playerCountSummary: document.getElementById('player-count-summary'),
+        playerListContainer: document.getElementById('player-list-container'),
+
+        openApiGuideBtn: document.getElementById('open-api-guide-btn'),
+        apiModal: document.getElementById('api-modal'),
+        closeApiModalBtn: document.getElementById('close-api-modal-btn'),
+        modalUrlForm: document.getElementById('modal-url-form'),
+        modalUrlInput: document.getElementById('modal-url-input'),
+        clearSavedUrlBtn: document.getElementById('clear-saved-url-btn'),
+      };
+
+      // ===================================================================
+      // HELPERS & SECURITY ESCAPING
+      // ===================================================================
+      function getActiveSheetUrl() {
+        const override = localStorage.getItem(URL_OVERRIDE_KEY);
+        if (override && override.trim()) return override.trim();
+        return SHEET_API_URL.trim();
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function toInt(val) {
+        if (typeof val === 'number' && Number.isFinite(val)) return Math.max(0, Math.floor(val));
+        const parsed = parseInt(String(val || '0').replace(/[^0-9-]/g, ''), 10);
+        return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
+      }
+
+      function formatNumber(n) {
+        return new Intl.NumberFormat('en-IN').format(Number(n) || 0);
+      }
+
+      function showToast(message, variant = 'info') {
+        if (state.toastTimer) clearTimeout(state.toastTimer);
+        const styles = {
+          success: 'bg-emerald-950/95 border-emerald-500/40 text-emerald-100',
+          error: 'bg-red-950/95 border-red-500/50 text-red-100',
+          info: 'bg-slate-900/95 border-indigo-400/40 text-slate-100',
+        };
+        els.toastBanner.className =
+          'fixed bottom-5 left-1/2 -translate-x-1/2 z-50 max-w-[92vw] sm:max-w-md px-4 py-3 rounded-xl border text-xs sm:text-sm font-medium shadow-2xl backdrop-blur-md ' +
+          (styles[variant] || styles.info);
+        els.toastBanner.textContent = message;
+        els.toastBanner.classList.remove('hidden');
+
+        state.toastTimer = setTimeout(() => {
+          els.toastBanner.classList.add('hidden');
+        }, 3800);
+      }
+
+      function isTimestampTodayOr24h(rawVal) {
+        if (!rawVal) return false;
+        if (rawVal === true) return true;
+        const str = String(rawVal).trim();
+        if (!str) return false;
+
+        // Numeric epoch (ms or seconds)
+        if (/^\d{10,13}$/.test(str)) {
+          const ms = str.length === 10 ? Number(str) * 1000 : Number(str);
+          const diff = Date.now() - ms;
+          return diff >= -60000 && diff <= 24 * 60 * 60 * 1000;
+        }
+
+        const parsed = Date.parse(str);
+        if (!Number.isNaN(parsed)) {
+          const now = new Date();
+          const target = new Date(parsed);
+          const diff = Date.now() - parsed;
+          const sameCalendarDay =
+            target.getFullYear() === now.getFullYear() &&
+            target.getMonth() === now.getMonth() &&
+            target.getDate() === now.getDate();
+          return sameCalendarDay || (diff >= -60000 && diff <= 24 * 60 * 60 * 1000);
+        }
+        return false;
+      }
+
+      function normalizeUsersPayload(payload) {
+        let rows = [];
+        if (Array.isArray(payload)) {
+          rows = payload;
+        } else if (payload && typeof payload === 'object') {
+          if (Array.isArray(payload.users)) rows = payload.users;
+          else if (Array.isArray(payload.data)) rows = payload.data;
+          else if (Array.isArray(payload.rows)) rows = payload.rows;
+          else if (Array.isArray(payload.records)) rows = payload.records;
+        }
+
+        const deduped = new Map();
+
+        rows.forEach((raw) => {
+          if (!raw || typeof raw !== 'object') return;
+          const rawId = String(
+            raw.userId ?? raw.user_id ?? raw.uid ?? raw.id ?? raw.UserID ?? raw['10-Digit ID'] ?? ''
+          ).trim();
+          if (!rawId) return;
+
+          const name = String(
+            raw.name ?? raw.userName ?? raw.user_name ?? raw.Name ?? raw.playerName ?? 'Unnamed Player'
+          ).trim();
+
+          const adsWatched = toInt(
+            raw.adsWatched ?? raw.rewardedWatched ?? raw.ads_watched ?? raw.AdsWatched ?? raw['Ads Watched'] ?? 0
+          );
+
+          const adsSkipped = toInt(
+            raw.adsSkipped ?? raw.ads_skipped ?? raw.AdsSkipped ?? raw['Ads Skipped'] ?? 0
+          );
+
+          const currentCoins = toInt(
+            raw.currentCoins ?? raw.coins ?? raw.coinBalance ?? raw.current_coins ?? raw.Coins ?? raw['Current Coins'] ?? 0
+          );
+
+          const city = String(raw.city ?? raw.City ?? raw.location ?? '').trim();
+          const ip = String(raw.ip ?? raw.ipAddress ?? raw.ip_address ?? raw.IP ?? '').trim();
+          const cityIp = [city, ip].filter(Boolean).join(' · ') || (raw.cityIp || raw['City/IP'] || 'Location unavailable');
+
+          const rawStatus = String(raw.status ?? raw.accountStatus ?? raw.Status ?? '').trim().toLowerCase();
+          const isBlocked =
+            raw.isBanned === true ||
+            raw.isBlocked === true ||
+            raw.blocked === true ||
+            String(raw.isBanned).toLowerCase() === 'true' ||
+            String(raw.isBlocked).toLowerCase() === 'true' ||
+            rawStatus === 'blocked' ||
+            rawStatus === 'banned';
+
+          const lastActiveRaw =
+            raw.lastActiveTime ?? raw.lastActive ?? raw.last_active ?? raw.updatedAt ?? raw.timestamp ?? raw.LastActive ?? '';
+
+          const isActive24h =
+            raw.activeToday === true ||
+            raw.isActive24h === true ||
+            isTimestampTodayOr24h(lastActiveRaw);
+
+          const isFraud = currentCoins > adsWatched * 5 + 10;
+
+          deduped.set(rawId, {
+            id: rawId,
+            name: name || 'Unnamed Player',
+            adsWatched,
+            adsSkipped,
+            currentCoins,
+            cityIp,
+            isBlocked,
+            statusLabel: isBlocked ? 'Blocked' : 'Active',
+            isActive24h,
+            isFraud,
+            lastActiveRaw,
+          });
+        });
+
+        return Array.from(deduped.values());
+      }
+
+      // ===================================================================
+      // AUTHENTICATION / LOGIN GATE
+      // ===================================================================
+      function unlockDashboard() {
+        els.loginGate.classList.add('hidden');
+        els.dashboardShell.classList.remove('hidden');
+        updateUrlBannerState();
+        fetchLiveTelemetry();
+      }
+
+      function lockDashboard() {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+        els.dashboardShell.classList.add('hidden');
+        els.loginGate.classList.remove('hidden');
+        els.pinInput.value = '';
+        els.loginError.classList.add('hidden');
+        els.pinInput.focus();
+      }
+
+      function initAuthGate() {
+        const storedSession = localStorage.getItem(SESSION_STORAGE_KEY);
+        if (storedSession === 'authenticated') {
+          unlockDashboard();
+          return;
+        }
+
+        els.loginForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const entered = els.pinInput.value.trim();
+          if (entered === ADMIN_SECRET_PIN) {
+            els.loginError.classList.add('hidden');
+            localStorage.setItem(SESSION_STORAGE_KEY, 'authenticated');
+            unlockDashboard();
+          } else {
+            els.loginError.classList.remove('hidden');
+            els.pinInput.focus();
+            els.pinInput.select();
+          }
+        });
+      }
+
+      // ===================================================================
+      // GOOGLE SHEETS FETCH & POST MUTATIONS
+      // ===================================================================
+      function updateUrlBannerState() {
+        const url = getActiveSheetUrl();
+        if (!url) {
+          els.setupNotice.classList.remove('hidden');
+        } else {
+          els.setupNotice.classList.add('hidden');
+        }
+        els.modalUrlInput.value = url;
+      }
+
+      function setLoadingState(loading) {
+        state.isLoading = loading;
+        els.refreshBtn.disabled = loading;
+        if (loading) {
+          els.refreshIcon.classList.add('animate-spin');
+        } else {
+          els.refreshIcon.classList.remove('animate-spin');
+        }
+      }
+
+      async function fetchLiveTelemetry() {
+        const url = getActiveSheetUrl();
+        updateUrlBannerState();
+
+        if (!url) {
+          state.users = [];
+          renderMetrics();
+          renderPlayerList();
+          els.lastSyncedText.textContent = 'Sheet URL not set';
+          return;
+        }
+
+        setLoadingState(true);
+        els.syncErrorBanner.classList.add('hidden');
+        renderLoadingSkeleton();
+
+        try {
+          const separator = url.includes('?') ? '&' : '?';
+          const fetchUrl = `${url}${separator}_t=${Date.now()}`;
+          const response = await fetch(fetchUrl, { method: 'GET' });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} (${response.statusText || 'Request failed'})`);
+          }
+
+          const payload = await response.json();
+          state.users = normalizeUsersPayload(payload);
+          state.lastSyncedAt = new Date();
+
+          renderMetrics();
+          renderPlayerList();
+          els.lastSyncedText.textContent =
+            'Updated ' +
+            state.lastSyncedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        } catch (err) {
+          els.syncErrorDetail.textContent = err && err.message ? err.message : 'Network or CORS error while reading Google Sheet.';
+          els.syncErrorBanner.classList.remove('hidden');
+          renderMetrics();
+          renderPlayerList();
+        } finally {
+          setLoadingState(false);
+        }
+      }
+
+      async function postSheetAction(payload) {
+        const url = getActiveSheetUrl();
+        if (!url) {
+          showToast('Configure your Google Sheets Web App URL first.', 'error');
+          els.setupNotice.classList.remove('hidden');
+          els.runtimeUrlInput.focus();
+          return false;
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const text = await response.text();
+        if (text) {
+          try {
+            const json = JSON.parse(text);
+            if (json && json.success === false) {
+              throw new Error(json.error || json.message || 'Action rejected by Google Sheet');
+            }
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) {
+              // Plain text "OK" from Apps Script is valid
+            } else {
+              throw parseErr;
+            }
+          }
+        }
+        return true;
+      }
+
+      // ===================================================================
+      // RENDERING: TOP METRICS & EARNINGS
+      // ===================================================================
+      function renderMetrics() {
+        const users = state.users;
+        const uniqueTenDigitCount = users.filter((u) => /^\d{10}$/.test(u.id)).length;
+        const totalRegistered = uniqueTenDigitCount > 0 ? uniqueTenDigitCount : users.length;
+        const activeToday = users.filter((u) => u.isActive24h).length;
+        const totalAdsWatched = users.reduce((sum, u) => sum + u.adsWatched, 0);
+
+        const revenueUsd = (totalAdsWatched / 1000) * USD_PER_THOUSAND_ADS;
+        const revenueInr = revenueUsd * USD_TO_INR_RATE;
+
+        els.metricTotalUsers.textContent = formatNumber(totalRegistered);
+        els.metricActiveUsers.textContent = formatNumber(activeToday);
+        els.metricTotalAds.textContent = formatNumber(totalAdsWatched);
+        els.metricRevenueUsd.textContent = '$' + revenueUsd.toFixed(2);
+        els.metricRevenueInr.textContent = '₹' + revenueInr.toFixed(2) + ' INR';
+      }
+
+      // ===================================================================
+      // RENDERING: PLAYER LIST & FRAUD RADAR
+      // ===================================================================
+      function renderLoadingSkeleton() {
+        els.playerListContainer.innerHTML = Array.from({ length: 4 })
+          .map(
+            () => `
+            <div class="glass-card rounded-2xl p-4 sm:p-5 animate-pulse space-y-3">
+              <div class="flex items-center justify-between">
+                <div class="h-4 w-36 bg-white/10 rounded"></div>
+                <div class="h-4 w-20 bg-white/10 rounded"></div>
+              </div>
+              <div class="h-3 w-48 bg-white/10 rounded"></div>
+              <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
+                <div class="h-8 bg-white/10 rounded"></div>
+                <div class="h-8 bg-white/10 rounded"></div>
+                <div class="h-8 bg-white/10 rounded"></div>
+              </div>
+            </div>
+          `
+          )
+          .join('');
+      }
+
+      function renderPlayerList() {
+        const query = state.searchQuery.trim().toLowerCase();
+        const filter = state.activeFilter;
+
+        const filtered = state.users.filter((u) => {
+          if (filter === 'active' && !u.isActive24h) return false;
+          if (filter === 'fraud' && !u.isFraud) return false;
+          if (filter === 'blocked' && !u.isBlocked) return false;
+
+          if (!query) return true;
+          return u.name.toLowerCase().includes(query) || u.id.toLowerCase().includes(query);
+        });
+
+        const fraudCount = state.users.filter((u) => u.isFraud).length;
+        els.playerCountSummary.textContent =
+          `${formatNumber(filtered.length)} shown` +
+          (fraudCount > 0 ? ` · ${formatNumber(fraudCount)} hack alerts` : '');
+
+        if (!getActiveSheetUrl()) {
+          els.playerListContainer.innerHTML = `
+            <div class="md:col-span-2 glass-card rounded-2xl p-8 text-center space-y-2">
+              <p class="font-display text-base font-semibold text-white">No Google Sheet Connected</p>
+              <p class="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                Add your Google Apps Script Web App URL above or set <code class="font-mono text-slate-200">SHEET_API_URL</code> in <code class="font-mono text-slate-200">index.html</code> to load live player records.
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        if (filtered.length === 0) {
+          els.playerListContainer.innerHTML = `
+            <div class="md:col-span-2 glass-card rounded-2xl p-8 text-center space-y-2">
+              <p class="font-display text-base font-semibold text-white">No matching players found</p>
+              <p class="text-xs sm:text-sm text-slate-400">
+                ${state.users.length === 0 ? 'Your Google Sheet currently returned zero player rows.' : 'Try clearing your search or switching the active filter.'}
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        els.playerListContainer.innerHTML = filtered
+          .map((u) => {
+            const cardStyle = u.isFraud
+              ? 'fraud-card'
+              : u.isBlocked
+              ? 'glass-card border-amber-500/35'
+              : 'glass-card hover:border-indigo-400/35';
+
+            const statusClass = u.isBlocked ? 'text-red-400' : 'text-emerald-400';
+            const hackAlertHtml = u.isFraud
+              ? `<span class="inline-flex items-center px-2.5 py-1 rounded-lg bg-red-600 text-white text-xs font-semibold tracking-tight shadow-md shadow-red-950/60 shrink-0">⚠️ HACK DETECTED</span>`
+              : '';
+
+            return `
+              <article class="${cardStyle} rounded-2xl p-4 sm:p-5 transition">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <h3 class="font-display text-base font-semibold text-white truncate">
+                      ${escapeHtml(u.name)}
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-400 mt-0.5">
+                      <span class="font-mono text-indigo-300 tabular-nums">ID: ${escapeHtml(u.id)}</span>
+                      <span aria-hidden="true">&middot;</span>
+                      <span class="font-semibold ${statusClass}">${escapeHtml(u.statusLabel)}</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    ${hackAlertHtml}
+                    <button
+                      type="button"
+                      data-select-id="${escapeHtml(u.id)}"
+                      class="select-player-btn min-h-[36px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-indigo-600/30 border border-white/10 text-xs font-medium text-slate-200 hover:text-white transition whitespace-nowrap"
+                    >
+                      Select
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 mt-4 pt-3.5 border-t border-white/10">
+                  <div>
+                    <p class="text-[11px] text-slate-400">Ads Watched</p>
+                    <p class="font-mono text-sm sm:text-base font-semibold text-white tabular-nums mt-0.5">${formatNumber(u.adsWatched)}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] text-slate-400">Ads Skipped</p>
+                    <p class="font-mono text-sm sm:text-base font-semibold text-slate-200 tabular-nums mt-0.5">${formatNumber(u.adsSkipped)}</p>
+                  </div>
+                  <div>
+                    <p class="text-[11px] text-slate-400">Current Coins</p>
+                    <p class="font-mono text-sm sm:text-base font-bold ${u.isFraud ? 'text-red-300' : 'text-amber-300'} tabular-nums mt-0.5">${formatNumber(u.currentCoins)}</p>
+                  </div>
+                </div>
+
+                <div class="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between gap-2 text-xs text-slate-400">
+                  <span class="truncate">${escapeHtml(u.cityIp)}</span>
+                  <span class="font-mono text-[11px] text-slate-500 tabular-nums shrink-0">Max legit: ${formatNumber(u.adsWatched * 5 + 10)}</span>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      // ===================================================================
+      // EVENT LISTENERS
+      // ===================================================================
+      els.togglePinBtn.addEventListener('click', () => {
+        const isPassword = els.pinInput.type === 'password';
+        els.pinInput.type = isPassword ? 'text' : 'password';
+        els.eyeOpen.classList.toggle('hidden', isPassword);
+        els.eyeClosed.classList.toggle('hidden', !isPassword);
+      });
+
+      els.logoutBtn.addEventListener('click', lockDashboard);
+      els.refreshBtn.addEventListener('click', fetchLiveTelemetry);
+      els.dismissErrorBtn.addEventListener('click', () => els.syncErrorBanner.classList.add('hidden'));
+
+      els.runtimeUrlForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = els.runtimeUrlInput.value.trim();
+        if (!url) {
+          showToast('Please paste a valid Google Sheets Web App URL.', 'error');
+          return;
+        }
+        localStorage.setItem(URL_OVERRIDE_KEY, url);
+        showToast('Google Sheets URL connected. Fetching live data...', 'success');
+        fetchLiveTelemetry();
+      });
+
+      // Modal Controls
+      els.openApiGuideBtn.addEventListener('click', () => {
+        els.modalUrlInput.value = getActiveSheetUrl();
+        els.apiModal.classList.remove('hidden');
+      });
+      els.closeApiModalBtn.addEventListener('click', () => els.apiModal.classList.add('hidden'));
+      els.apiModal.addEventListener('click', (e) => {
+        if (e.target === els.apiModal) els.apiModal.classList.add('hidden');
+      });
+      els.modalUrlForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = els.modalUrlInput.value.trim();
+        if (url) {
+          localStorage.setItem(URL_OVERRIDE_KEY, url);
+        } else {
+          localStorage.removeItem(URL_OVERRIDE_KEY);
+        }
+        els.apiModal.classList.add('hidden');
+        showToast('Google Sheets API URL updated.', 'success');
+        fetchLiveTelemetry();
+      });
+      els.clearSavedUrlBtn.addEventListener('click', () => {
+        localStorage.removeItem(URL_OVERRIDE_KEY);
+        els.modalUrlInput.value = SHEET_API_URL;
+        els.apiModal.classList.add('hidden');
+        fetchLiveTelemetry();
+      });
+
+      // Search & Filter Controls
+      els.playerSearchInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderPlayerList();
+      });
+
+      els.filterTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          state.activeFilter = tab.dataset.filter;
+          els.filterTabs.forEach((btn) => {
+            const active = btn === tab;
+            btn.classList.toggle('bg-indigo-600', active);
+            btn.classList.toggle('text-white', active);
+            btn.classList.toggle('text-slate-400', !active);
+          });
+          renderPlayerList();
+        });
+      });
+
+      // One-tap Select User ID into Manual Control Panel
+      els.playerListContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.select-player-btn');
+        if (!btn) return;
+        const selectedId = btn.getAttribute('data-select-id');
+        if (selectedId) {
+          els.controlUserId.value = selectedId;
+          els.controlUserId.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast(`Selected User ID ${selectedId}`, 'info');
+        }
+      });
+
+      // Send Bonus Coins (POST action: "creditBonus")
+      els.btnSendCoins.addEventListener('click', async () => {
+        const userId = els.controlUserId.value.trim();
+        const amount = parseInt(els.controlCoinAmount.value.trim(), 10);
+
+        if (!/^\d{10}$/.test(userId)) {
+          showToast('Enter a valid 10-digit User ID.', 'error');
+          els.controlUserId.focus();
+          return;
+        }
+        if (!Number.isFinite(amount) || amount <= 0) {
+          showToast('Enter a valid positive coin amount.', 'error');
+          els.controlCoinAmount.focus();
+          return;
+        }
+
+        const originalLabel = els.btnSendCoins.textContent;
+        els.btnSendCoins.disabled = true;
+        els.btnSendCoins.textContent = 'Sending...';
+
+        try {
+          const ok = await postSheetAction({
+            action: 'creditBonus',
+            userId,
+            amount,
+          });
+          if (ok) {
+            showToast(`Credited +${formatNumber(amount)} coins to ${userId}.`, 'success');
+            els.controlCoinAmount.value = '';
+            await fetchLiveTelemetry();
+          }
+        } catch (err) {
+          showToast('Coin credit failed: ' + (err.message || 'Request error'), 'error');
+        } finally {
+          els.btnSendCoins.disabled = false;
+          els.btnSendCoins.textContent = originalLabel;
+        }
+      });
+
+      // Block / Unblock User (POST action: "blockUser")
+      els.btnBlockUser.addEventListener('click', async () => {
+        const userId = els.controlUserId.value.trim();
+        if (!/^\d{10}$/.test(userId)) {
+          showToast('Enter a valid 10-digit User ID to block or unblock.', 'error');
+          els.controlUserId.focus();
+          return;
+        }
+
+        const originalLabel = els.btnBlockUser.textContent;
+        els.btnBlockUser.disabled = true;
+        els.btnBlockUser.textContent = 'Updating...';
+
+        try {
+          const ok = await postSheetAction({
+            action: 'blockUser',
+            userId,
+          });
+          if (ok) {
+            showToast(`Updated block status for User ID ${userId}.`, 'success');
+            await fetchLiveTelemetry();
+          }
+        } catch (err) {
+          showToast('Status update failed: ' + (err.message || 'Request error'), 'error');
+        } finally {
+          els.btnBlockUser.disabled = false;
+          els.btnBlockUser.textContent = originalLabel;
+        }
+      });
+
+      // Initialize Auth Gate on Load
+      initAuthGate();
+    })();
+  </script>
+</body>
+</html>
